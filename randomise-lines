@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+# Author: Gilberto Agostinho <gilbertohasnofb@gmail.com>
+# https://github.com/gilbertohasnofb/randomise-lines
+
+"""randomise-lines
+
+A Python script that randomises the order of the lines of an input text file.
+Accepts single or multiple filenames as well as wildcards.
+By default, it overwrites the original file.
+If an output filename is given, it creates that new file.
+For help, use:
+$ randomise-lines --help
+"""
+
+__version__ = '0.1.0'
+
+
+import argparse
+import random
+import os
+
+
+def parse_arguments() -> argparse.Namespace:
+    """Parsing command line arguments using argparse. Returns an
+    argparse.Namespace object.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input',
+                        type=str,
+                        nargs='*',
+                        help='input filename(s); also accepts wildcards',
+                        )
+    parser.add_argument('-o', '--output',
+                        required=False,
+                        type=str,
+                        default=None,
+                        help='sets the output filename; if not present, the ' \
+                             'program overwrites the original file',
+                        )
+    parser.add_argument('-v', '--version',
+                        action='version',
+                        version='%(prog)s ' + __version__
+                        )
+    return parser.parse_args()
+
+
+def randomise_lines_loop(args: argparse.Namespace):
+    """Main program loop. Takes the parsed output from parse_arguments() and
+    randomises the lines of an input file.
+    """
+
+    counter = 0
+
+    for input_file_name in args.input:
+
+        # skipping directories
+        if os.path.isdir(input_file_name):
+            continue
+
+        # parsing output filename
+        if args.output:
+            if len(args.input) == 1:
+                output_file_name = args.output
+            else:
+                if len(args.output.split('.')) > 1:
+                    output_prefix, output_extension = args.output.split('.')
+                else:
+                    output_prefix = args.output
+                    output_extension = None
+                output_file_name = output_prefix + '-' + str(counter)
+                counter += 1
+                if output_extension:
+                    output_file_name += '.' + output_extension
+        else:
+            output_file_name = input_file_name
+
+        # renaming
+        with open(input_file_name, 'r+') as input_file:
+            contents = input_file.readlines()
+            random.shuffle(contents)
+            if input_file_name != output_file_name:
+                with open(output_file_name, 'w') as output_file:
+                    output_file.writelines(contents)
+            else:
+                input_file.seek(0)
+                input_file.truncate(0)
+                input_file.writelines(contents)
+
+    return None
+
+
+def main():
+    args = parse_arguments()
+    randomise_lines_loop(args)
+    return None
+
+
+if __name__ == '__main__':
+    main()
